@@ -717,7 +717,7 @@
     <div class="hero">
         <div class="Navbar">
             <div class="logo">
-                <img src="logo.png" alt="Value Villa Logo">
+                <img src="templates/logo.png" alt="Value Villa Logo">
             </div>
             <div class="links">
                 <a class="link" href="#">Home</a>
@@ -1009,7 +1009,7 @@
         <div class="footer-container">
             <div class="footer-column">
                 <div class="footer-logo">
-                    <img src="logo.png" alt="Value Villa Logo">
+                    <img src="templates/logo.png" alt="Value Villa Logo">
                 </div>
                 <p>Accurate property valuations powered by AI technology for the Indian real estate market.</p>
                 <div class="social-links">
@@ -1058,122 +1058,111 @@
         </div>
     </footer>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get the form element
-            const predictionForm = document.querySelector('form[action="/predict"]');
+document.addEventListener('DOMContentLoaded', function() {
+    const predictionForm = document.querySelector('form[action="/predict"]');
+    
+    // Create toast container
+    if (!document.querySelector('.toast-container')) {
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.bottom = '20px';
+        toastContainer.style.right = '20px';
+        toastContainer.style.zIndex = '1000';
+        document.body.appendChild(toastContainer);
+    }
+
+    predictionForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitButton = predictionForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.textContent = 'Predicting...';
+        submitButton.disabled = true;
+
+        try {
+            const formData = new FormData(predictionForm);
             
-            // Create toast container if it doesn't exist
-            if (!document.querySelector('.toast-container')) {
-                const toastContainer = document.createElement('div');
-                toastContainer.className = 'toast-container';
-                toastContainer.style.position = 'fixed';
-                toastContainer.style.bottom = '20px';
-                toastContainer.style.right = '20px';
-                toastContainer.style.zIndex = '1000';
-                document.body.appendChild(toastContainer);
-            }
-        
-            // Add submit event listener to the form
-            predictionForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Show loading state
-                const submitButton = predictionForm.querySelector('button[type="submit"]');
-                const originalButtonText = submitButton.textContent;
-                submitButton.textContent = 'Predicting...';
-                submitButton.disabled = true;
-        
-                try {
-                    // Get form data
-                    const formData = new FormData(predictionForm);
-                    
-                    // Send POST request to /predict
-                    const response = await fetch('/predict', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    
-                    const result = await response.text();
-                    
-                    // Create and show toast
-                    showToast(result);
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    showToast('Error: Could not get prediction', true);
-                } finally {
-                    // Reset button state
-                    submitButton.textContent = originalButtonText;
-                    submitButton.disabled = false;
-                }
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
             });
-        
-            // Function to show toast notification
-            function showToast(message, isError = false) {
-                const toastContainer = document.querySelector('.toast-container');
-                const toast = document.createElement('div');
-                toast.className = `toast ${isError ? 'error' : ''}`;
-                toast.innerHTML = `
-                    <div class="result">${message}</div>
-                    <button class="close-toast">&times;</button>
-                `;
-                
-                // Add styles to toast
-                toast.style.position = 'relative';
-                toast.style.padding = '15px 20px';
-                toast.style.marginBottom = '10px';
-                toast.style.borderRadius = '8px';
-                toast.style.backgroundColor = isError ? '#fee2e2' : '#ecfdf5';
-                toast.style.color = isError ? '#b91c1c' : '#065f46';
-                toast.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                toast.style.display = 'flex';
-                toast.style.justifyContent = 'space-between';
-                toast.style.alignItems = 'center';
-                toast.style.minWidth = '250px';
-                toast.style.maxWidth = '350px';
-                toast.style.animation = 'slideIn 0.3s ease-out';
-                
-                // Close button styles
-                const closeBtn = toast.querySelector('.close-toast');
-                closeBtn.style.background = 'none';
-                closeBtn.style.border = 'none';
-                closeBtn.style.fontSize = '1.2rem';
-                closeBtn.style.cursor = 'pointer';
-                closeBtn.style.color = 'inherit';
-                
-                // Add close functionality
-                closeBtn.addEventListener('click', () => {
-                    toast.style.animation = 'slideOut 0.3s ease-out';
-                    setTimeout(() => toast.remove(), 300);
-                });
-                
-                toastContainer.appendChild(toast);
-                
-                // Auto-remove after 5 seconds
-                setTimeout(() => {
-                    toast.style.animation = 'slideOut 0.3s ease-out';
-                    setTimeout(() => toast.remove(), 300);
-                }, 5000);
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                showToast(result.prediction_text);
+            } else {
+                showToast(`Error: ${result.message}`, true);
             }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Error: Could not get prediction', true);
+        } finally {
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
+        }
+    });
+
+    function showToast(message, isError = false) {
+        const toastContainer = document.querySelector('.toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${isError ? 'error' : ''}`;
+        toast.innerHTML = `
+            <div class="result">${message}</div>
+            <button class="close-toast">&times;</button>
+        `;
         
-            // Add CSS animations
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
+        // Style the toast
+        toast.style.position = 'relative';
+        toast.style.padding = '15px 20px';
+        toast.style.marginBottom = '10px';
+        toast.style.borderRadius = '8px';
+        toast.style.backgroundColor = isError ? '#fee2e2' : '#ecfdf5';
+        toast.style.color = isError ? '#b91c1c' : '#065f46';
+        toast.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        toast.style.display = 'flex';
+        toast.style.justifyContent = 'space-between';
+        toast.style.alignItems = 'center';
+        toast.style.minWidth = '250px';
+        toast.style.maxWidth = '350px';
+        toast.style.animation = 'slideIn 0.3s ease-out';
+        
+        const closeBtn = toast.querySelector('.close-toast');
+        closeBtn.style.background = 'none';
+        closeBtn.style.border = 'none';
+        closeBtn.style.fontSize = '1.2rem';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.color = 'inherit';
+        
+        closeBtn.addEventListener('click', () => {
+            toast.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
         });
-        </script>
+        
+        toastContainer.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
 </body>
 </html>
